@@ -334,21 +334,28 @@ pub fn render(f: &mut Frame, app: &mut App) {
         ));
     }
 
-    // Top banner split into left content and a right-aligned mode indicator.
+    // Top banner: a text row (left content and a right-aligned mode
+    // indicator) above a separator that spans the full width.
+    let header_rows = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(1), Constraint::Length(1)])
+        .split(title_area);
     let banner = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Min(0), Constraint::Length(12)])
-        .split(title_area);
+        .split(header_rows[0]);
 
     let title = Paragraph::new(Line::from(title_spans))
-        .style(Style::default().bg(THEME.read().unwrap().bg))
-        .block(
-            Block::default()
-                .borders(Borders::BOTTOM)
-                .border_style(Style::default().fg(THEME.read().unwrap().border)),
-        );
+        .style(Style::default().bg(THEME.read().unwrap().bg));
     f.render_widget(title, banner[0]);
     render_mode_indicator(f, app, banner[1]);
+    f.render_widget(
+        Block::default()
+            .borders(Borders::TOP)
+            .border_style(Style::default().fg(THEME.read().unwrap().border))
+            .style(Style::default().bg(THEME.read().unwrap().bg)),
+        header_rows[1],
+    );
 
     // Middle: Sidebar | Main Area | Preview Area
     let can_zoom = app.active_tab != Tab::Pipelines || !app.jobs.items.is_empty();
@@ -1934,6 +1941,20 @@ mod tests {
     use super::*;
     use ratatui::Terminal;
     use ratatui::backend::TestBackend;
+
+    #[test]
+    fn header_separator_spans_the_full_width() {
+        let mut terminal = Terminal::new(TestBackend::new(120, 20)).unwrap();
+        let mut app = App::default();
+
+        terminal.draw(|f| render(f, &mut app)).unwrap();
+
+        let buffer = terminal.backend().buffer();
+        let separator: String = (0..buffer.area.width)
+            .map(|x| buffer[(x, 1)].symbol().to_string())
+            .collect();
+        assert!(separator.chars().all(|c| c == '─'), "{separator}");
+    }
 
     #[test]
     fn error_toast_strips_escape_sequences_from_cli_stderr() {
