@@ -3612,6 +3612,44 @@ pub(crate) mod tests {
     }
 
     #[tokio::test]
+    async fn tab_keys_leave_a_zoomed_preview_only_when_tab_switch_in_zoom_is_on() {
+        let mut app = App::default();
+        app.active_tab = Tab::Issues;
+        app.detail_visible = true;
+        app.details_zoomed = true;
+        app.config.layout.tab_switch_in_zoom = false;
+
+        dispatch(&mut app, &key(KeyCode::Char('l')));
+        dispatch(&mut app, &key(KeyCode::Left));
+        assert_eq!(
+            app.active_tab,
+            Tab::Issues,
+            "tab keys do nothing while zoomed"
+        );
+        assert!(app.details_zoomed, "the zoom stays");
+
+        app.config.layout.tab_switch_in_zoom = true;
+        dispatch(&mut app, &key(KeyCode::Char('l')));
+        assert_ne!(app.active_tab, Tab::Issues, "tab keys switch from the zoom");
+        assert!(!app.details_zoomed, "switching leaves the zoom");
+    }
+
+    #[tokio::test]
+    async fn tab_keys_switch_on_a_tab_whose_preview_cannot_zoom() {
+        // A zoom request on Pipelines leaves the layout unzoomed, so the tab
+        // keys (and the top tab bar) keep working there.
+        let mut app = App::default();
+        app.active_tab = Tab::Pipelines;
+        app.detail_visible = true;
+        app.details_zoomed = true;
+        app.config.layout.tab_switch_in_zoom = false;
+        assert!(!app.preview_zoomed());
+
+        dispatch(&mut app, &key(KeyCode::Char('l')));
+        assert_ne!(app.active_tab, Tab::Pipelines);
+    }
+
+    #[tokio::test]
     async fn j_and_k_scroll_the_detail_pane_by_one_line_with_default_config() {
         let mut app = App::default();
         app.detail_visible = true;

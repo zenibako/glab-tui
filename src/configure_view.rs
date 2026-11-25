@@ -76,6 +76,15 @@ impl LayoutSetting {
         LayoutSetting::TerminalPaneHeight,
     ];
 
+    /// Whether the setting changes anything under `layout`: the width
+    /// of the sidebar means nothing while navigation is a top bar.
+    pub fn applies(self, layout: &LayoutConfig) -> bool {
+        match self {
+            LayoutSetting::NavWidth => layout.nav_position == NavPosition::Left,
+            _ => true,
+        }
+    }
+
     pub fn label(self) -> &'static str {
         match self {
             LayoutSetting::NavPosition => "Navigation position",
@@ -239,7 +248,12 @@ pub fn configure_rows(app: &App) -> Vec<ConfigureRow> {
             .into_iter()
             .map(|(tab, _)| ConfigureRow::Tab(tab)),
     );
-    rows.extend(LayoutSetting::ALL.map(ConfigureRow::Layout));
+    rows.extend(
+        LayoutSetting::ALL
+            .into_iter()
+            .filter(|setting| setting.applies(&app.config.layout))
+            .map(ConfigureRow::Layout),
+    );
     rows.push(ConfigureRow::Save);
     rows
 }
@@ -299,6 +313,30 @@ mod tests {
             tabs: Some(tabs.to_vec()),
             ..LayoutConfig::default()
         }
+    }
+
+    #[test]
+    fn stepping_nav_position_flips_it_and_hides_the_nav_width_row_in_top_mode() {
+        let mut app = App::default();
+        let layout_rows = |app: &App| -> Vec<LayoutSetting> {
+            configure_rows(app)
+                .into_iter()
+                .filter_map(|row| match row {
+                    ConfigureRow::Layout(setting) => Some(setting),
+                    _ => None,
+                })
+                .collect()
+        };
+        assert!(layout_rows(&app).contains(&LayoutSetting::NavWidth));
+
+        LayoutSetting::NavPosition.step(&mut app.config.layout, true);
+        assert_eq!(app.config.layout.nav_position, NavPosition::Top);
+        assert_eq!(LayoutSetting::NavPosition.value(&app.config.layout), "top");
+        assert!(!layout_rows(&app).contains(&LayoutSetting::NavWidth));
+
+        LayoutSetting::NavPosition.step(&mut app.config.layout, false);
+        assert_eq!(app.config.layout.nav_position, NavPosition::Left);
+        assert!(layout_rows(&app).contains(&LayoutSetting::NavWidth));
     }
 
     #[test]

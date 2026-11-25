@@ -367,11 +367,9 @@ mod tab_names {
 /// release, from a file whose `[layout]` does not set the same thing.
 const LEGACY_DISABLED_TABS: &str = "disabled_tabs";
 const LEGACY_UI: &str = "ui";
-const LEGACY_UI_KEYS: [(&str, &str); 5] = [
+const LEGACY_UI_KEYS: [(&str, &str); 3] = [
     ("sidebar_visible", "nav_visible"),
     ("sidebar_width", "nav_width"),
-    ("nav_position", "nav_position"),
-    ("tab_switch_in_zoom", "tab_switch_in_zoom"),
     ("terminal_pane_visible", "terminal_pane_visible"),
 ];
 

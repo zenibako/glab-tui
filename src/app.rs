@@ -4646,7 +4646,7 @@ impl App {
         crate::ui::layout::LayoutState {
             active_tab: self.active_tab,
             detail_visible: self.detail_visible,
-            details_zoomed: self.details_zoomed,
+            preview_zoomed: self.preview_zoomed(),
             edit_zoomed: self.edit_menu().is_some(),
         }
     }
@@ -7002,10 +7002,13 @@ impl App {
         self.switch_to_tab(tabs[prev_index]);
     }
 
-    /// Whether the preview pane fills the workspace. A zoom request on the
-    /// Pipelines tab only takes effect once a pipeline's jobs are listed.
+    /// Whether the preview pane fills the workspace: a zoom request on a tab
+    /// that can zoom its preview. The layout ([`LayoutState::preview_zoomed`]),
+    /// the top tab bar and the tab keys all read this one condition.
+    ///
+    /// [`LayoutState::preview_zoomed`]: crate::ui::layout::LayoutState::preview_zoomed
     pub fn preview_zoomed(&self) -> bool {
-        self.details_zoomed && (self.active_tab != Tab::Pipelines || !self.jobs.items.is_empty())
+        self.details_zoomed && self.active_tab.can_zoom_preview()
     }
 
     /// Whether the next/previous-tab keys switch tabs right now.

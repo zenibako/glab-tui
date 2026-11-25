@@ -73,7 +73,9 @@ pub struct LayoutInputs {
 pub struct LayoutState {
     pub active_tab: Tab,
     pub detail_visible: bool,
-    pub details_zoomed: bool,
+    /// The preview fills the workspace ([`crate::app::App::preview_zoomed`],
+    /// which the tab keys read too, so the top tab bar and the keys agree).
+    pub preview_zoomed: bool,
     pub edit_zoomed: bool,
 }
 
@@ -88,6 +90,8 @@ pub struct LayoutPlan {
     pub banner_title: Rect,
     /// Right portion of the header bar (mode indicator, [`BANNER_MODE_WIDTH`] columns).
     pub banner_mode: Rect,
+    /// The header's bottom row: the separator line spanning the full width.
+    pub header_separator: Rect,
     /// Top horizontal tab navigation strip area (height 1 across workspace top when nav_position is Top and visible).
     pub top_nav_area: Rect,
     /// Middle workspace area (between header and bottom).
@@ -134,8 +138,10 @@ impl LayoutPlan {
         let panes = inputs.panes;
         let is_top_nav = panes.nav_position == NavPosition::Top && panes.nav_visible;
 
+        // The bar shows wherever the tab keys switch tabs: hidden in an edit
+        // form, and in a zoomed preview unless `tab_switch_in_zoom` is on.
         let show_top_nav =
-            is_top_nav && !state.edit_zoomed && (!state.details_zoomed || panes.tab_switch_in_zoom);
+            is_top_nav && !state.edit_zoomed && (!state.preview_zoomed || panes.tab_switch_in_zoom);
 
         let (top_nav_area, workspace_area) = if show_top_nav {
             let v = Layout::default()
@@ -152,14 +158,13 @@ impl LayoutPlan {
             header_area,
             banner_title: banner[0],
             banner_mode: banner[1],
+            header_separator: header_rows[1],
             top_nav_area,
             workspace_area,
             ..Default::default()
         };
 
-        let is_zoomed =
-            (state.details_zoomed && state.active_tab.can_zoom_preview()) || state.edit_zoomed;
-        if is_zoomed {
+        if state.preview_zoomed || state.edit_zoomed {
             return plan.zoomed();
         }
 
@@ -264,10 +269,6 @@ impl LayoutPlan {
         self.top_nav_area.height > 0 && self.top_nav_area.width > 0
     }
 
-    pub fn top_nav_area_opt(&self) -> Option<Rect> {
-        self.has_top_nav().then_some(self.top_nav_area)
-    }
-
     pub fn has_sidebar(&self) -> bool {
         self.sidebar_rect.width > 0
     }
@@ -363,7 +364,7 @@ mod tests {
             state: LayoutState {
                 active_tab: Tab::Issues,
                 detail_visible: true,
-                details_zoomed: false,
+                preview_zoomed: false,
                 edit_zoomed: false,
             },
         }
@@ -393,6 +394,7 @@ mod tests {
         assert_eq!(plan.header_area, Rect::new(0, 0, 100, 2));
         assert_eq!(plan.banner_mode, Rect::new(88, 0, 12, 1));
         assert_eq!(plan.banner_title, Rect::new(0, 0, 88, 1));
+        assert_eq!(plan.header_separator, Rect::new(0, 1, 100, 1));
         assert_eq!(plan.workspace_area, Rect::new(0, 2, 100, 28));
     }
 
@@ -436,7 +438,7 @@ mod tests {
     fn top_nav_in_zoomed_preview() {
         let mut inputs = base_inputs(120, 30);
         inputs.panes.nav_position = NavPosition::Top;
-        inputs.state.details_zoomed = true;
+        inputs.state.preview_zoomed = true;
 
         let plan = LayoutPlan::compute(inputs);
         assert!(plan.has_top_nav());
@@ -584,7 +586,7 @@ mod tests {
         assert!(!plan.has_detail());
         assert_eq!(plan.content_area.width, 98);
 
-        inputs.state.details_zoomed = true;
+        inputs.state.preview_zoomed = true;
         assert_eq!(
             LayoutPlan::compute(inputs).detail_rect,
             Rect::new(0, 2, 120, 28)
@@ -604,17 +606,12 @@ mod tests {
     #[test]
     fn zoom_expands_detail_to_full_workspace() {
         let mut inputs = base_inputs(120, 30);
-        inputs.state.details_zoomed = true;
+        inputs.state.preview_zoomed = true;
         let plan = LayoutPlan::compute(inputs);
 
         assert!(!plan.has_sidebar());
         assert_eq!(plan.content_area.width, 0);
         assert_eq!(plan.detail_rect, Rect::new(0, 2, 120, 28));
-
-        inputs.state.active_tab = Tab::Pipelines;
-        let plan_no_zoom = LayoutPlan::compute(inputs);
-        assert!(plan_no_zoom.has_sidebar());
-        assert!(plan_no_zoom.content_area.width > 0);
     }
 
     #[test]

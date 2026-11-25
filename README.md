@@ -372,17 +372,17 @@ The `[layout]` section decides which tabs show and in what order, and where the 
 
 ```toml
 [layout]
-# Tabs to show, in order: the sidebar, the next_tab / prev_tab keys and the
-# sidebar clicks all follow it. A tab left out is hidden; unset or empty shows
+# Tabs to show, in order: the navigation (sidebar or top bar), the next_tab /
+# prev_tab keys and navigation clicks all follow it. A tab left out is hidden; unset or empty shows
 # every tab. A name that is no tab is skipped and reported in the Terminal tab,
 # and so is any [layout] value its key cannot hold, which keeps the default.
 tabs = ["mrs", "issues", "pipelines", "todos", "terminal"]
-nav_position = "left"        # left (default) | top (horizontal clickable bar across top)
-nav_visible = true           # navigation sidebar or top bar, toggled with Alt+n (toggle_nav)
-nav_width = 22               # left nav only
-nav_min_width = 80           # left nav sidebar hides on narrower terminals
-tab_switch_in_zoom = true    # false: ←/→ (and h/l) do nothing in a zoomed preview
-preview = "auto"             # auto (right, below the list when narrow) | right | bottom | off; with no place, the Pipelines inspector opens full screen
+nav_position = "left"          # left: sidebar (default) | top: one-row clickable tab bar
+nav_visible = true             # navigation sidebar or top bar, toggled with Alt+n (toggle_nav)
+nav_width = 22                 # sidebar only
+nav_min_width = 80             # the sidebar hides on narrower terminals (the top bar never does)
+tab_switch_in_zoom = true      # false: ←/→ (h/l) do nothing in a zoomed preview, and the top bar hides there
+preview = "auto"               # auto (right, below the list when narrow) | right | bottom | off; with no place, the Pipelines inspector opens full screen
 preview_width = "auto"         # "auto" (30, 45 or 35% by terminal width), cells (40) or "35%"
 preview_height = "auto"        # height of a bottom preview: "auto" (half), cells or a percentage
 preview_min_width = 68         # columns beside the sidebar; narrower: an auto preview moves below, a right preview hides
@@ -570,8 +570,8 @@ Every table tab (Issues, MRs/PRs, Pipelines, Jobs, Runners, Releases, Todos, Mil
 
 These two sections apply to every tab.
 
-- **TABS** lists every tab. `Space` shows or hides one (the last shown tab stays), and `J` / `K` move a shown tab later / earlier in the sidebar and in the `h` / `l` order. Hiding the active tab moves to the first shown one.
-- **LAYOUT** holds the navigation sidebar, the preview (placement, width, height) and the terminal pane (visibility, height). `Space` or `l` / `→` picks the next value, `h` / `←` the previous one.
+- **TABS** lists every tab. `Space` shows or hides one (the last shown tab stays), and `J` / `K` move a shown tab later / earlier in the navigation and in the `h` / `l` order. Hiding the active tab moves to the first shown one.
+- **LAYOUT** holds the navigation (position, visibility, and the sidebar's width, which is left out while the navigation is a top bar), the preview (placement, width, height) and the terminal pane (visibility, height). `Space` or `l` / `→` picks the next value, `h` / `←` the previous one.
 
 ### Saving & persistence
 
@@ -596,7 +596,7 @@ These two sections apply to every tab.
 | `l` / `→` | Next tab | `next_tab` |
 | `h` / `←` | Previous tab | `prev_tab` |
 | `Tab` / `,` | Open the Configure View (`Space` toggle, `Enter` filter by column values, `J`/`K` reorder columns and tabs) | `configure` |
-| `Alt+n` | Show / hide the navigation sidebar | `toggle_nav` |
+| `Alt+n` | Show / hide the navigation (sidebar or top bar) | `toggle_nav` |
 | `Alt+t` | Show / hide the terminal pane | `toggle_terminal_pane` |
 | `Esc` | Close configure popup / overlay | — |
 | `j` / `↓` | Move selection down | `list.next_row` |

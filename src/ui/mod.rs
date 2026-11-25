@@ -544,11 +544,6 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     // Top banner: a text row (left content and a right-aligned mode
     // indicator) above a separator that spans the full width.
-    let header_rows = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([Constraint::Length(1), Constraint::Length(1)])
-        .split(plan.header_area);
-
     let title = Paragraph::new(Line::from(title_spans)).style(Style::default().bg(ctx.theme.bg));
     f.render_widget(title, plan.banner_title);
     render_mode_indicator(f, ctx, app, plan.banner_mode);
@@ -558,7 +553,7 @@ pub fn render(f: &mut Frame, app: &mut App) {
             .borders(Borders::TOP)
             .border_style(Style::default().fg(ctx.theme.border))
             .style(Style::default().bg(ctx.theme.bg)),
-        header_rows[1],
+        plan.header_separator,
     );
 
     if plan.has_top_nav() {
@@ -2532,6 +2527,22 @@ diff --git a/a.rs b/a.rs
         let (last, last_tab) = hits.last().unwrap();
         assert_eq!(*last_tab, tab);
         assert_eq!(last.right(), 60);
+    }
+
+    #[test]
+    fn top_nav_stays_where_the_tab_keys_work_even_with_a_zoom_request() {
+        // Pipelines cannot zoom its preview, so its zoom request neither
+        // zooms the layout nor stops the tab keys: the bar must stay too.
+        let mut terminal = Terminal::new(TestBackend::new(160, 30)).unwrap();
+        let mut app = App::default();
+        app.config.layout.nav_position = crate::config::NavPosition::Top;
+        app.config.layout.tab_switch_in_zoom = false;
+        app.active_tab = Tab::Pipelines;
+        app.details_zoomed = true;
+
+        terminal.draw(|f| render(f, &mut app)).unwrap();
+        assert!(app.tab_switch_enabled());
+        assert!(!app.top_nav_hits.is_empty());
     }
 
     #[test]

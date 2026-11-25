@@ -1047,6 +1047,34 @@ mod tests {
     }
 
     #[test]
+    fn top_nav_clicks_switch_tabs() {
+        use crossterm::event::MouseEventKind;
+        let mut app = app_with_client();
+        app.active_tab = Tab::Issues;
+        app.config.layout.nav_position = crate::config::NavPosition::Top;
+        let mut terminal =
+            ratatui::Terminal::new(ratatui::backend::TestBackend::new(160, 30)).unwrap();
+        terminal.draw(|f| crate::ui::render(f, &mut app)).unwrap();
+        let (rect, target) = *app
+            .top_nav_hits
+            .iter()
+            .find(|(_, tab)| *tab != Tab::Issues)
+            .expect("another tab on the top bar");
+
+        update(
+            &mut app,
+            Event::Mouse(crossterm::event::MouseEvent {
+                kind: MouseEventKind::Down(crossterm::event::MouseButton::Left),
+                column: rect.x + rect.width / 2,
+                row: rect.y,
+                modifiers: KeyModifiers::NONE,
+            }),
+        );
+
+        assert_eq!(app.active_tab, target);
+    }
+
+    #[test]
     fn sidebar_clicks_switch_tabs_inside_the_border_only() {
         use crossterm::event::MouseEventKind;
         let click = |row: u16, column: u16| {
